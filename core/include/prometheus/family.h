@@ -111,6 +111,7 @@ class PROMETHEUS_CPP_CORE_EXPORT Family : public Collectable {
   /// \throw std::runtime_exception on invalid label names.
   template <typename... Args>
   T& Add(const Labels& labels, Args&&... args) {
+    std::lock_guard<std::mutex> lock{mutex_};
     return Add(labels, detail::make_unique<T>(args...));
   }
 
@@ -124,6 +125,20 @@ class PROMETHEUS_CPP_CORE_EXPORT Family : public Collectable {
   ///
   /// \param labels A set of key-value pairs (= labels) of the dimensional data.
   bool Has(const Labels& labels) const;
+
+  /// \brief Returns a new or existing counter. Requires care but avoids
+  /// uncondition make_unique
+  ///
+  /// \param labels A set of key-value pairs (= labels) of the dimensional data.
+  template <typename... Args>
+  T& Get(const Labels& labels, Args&&... args) {
+    std::lock_guard<std::mutex> lock{mutex_};
+    auto existing(metrics_.find(labels));
+    if (existing == metrics_.end()) {
+      return Add(labels, detail::make_unique<T>(args...));
+    }
+    return *existing->second;
+  }
 
   /// \brief Returns the name for this family.
   ///

@@ -32,8 +32,6 @@ Family<T>::Family(const std::string& name, const std::string& help,
 
 template <typename T>
 T& Family<T>::Add(const Labels& labels, std::unique_ptr<T> object) {
-  std::lock_guard<std::mutex> lock{mutex_};
-
   auto insert_result =
       metrics_.insert(std::make_pair(labels, std::move(object)));
 
@@ -51,7 +49,6 @@ T& Family<T>::Add(const Labels& labels, std::unique_ptr<T> object) {
       }
     }
   }
-
   auto& stored_object = insert_result.first->second;
   assert(stored_object);
   return *stored_object;
