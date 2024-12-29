@@ -131,6 +131,20 @@ class PROMETHEUS_CPP_CORE_EXPORT Family : public Collectable {
   ///
   /// \param labels A set of key-value pairs (= labels) of the dimensional data.
   template <typename... Args>
+  T& GetAt(const Labels& labels, Args&&... args) {
+    std::lock_guard<std::mutex> lock{mutex_};
+    auto existing(metrics_.find(labels));
+    if (existing == metrics_.end()) {
+      throw std::runtime_error("Family<T>::GetAt(): entry not found");
+    }
+    return *existing->second;
+  }
+
+  /// \brief Returns a new or existing counter. Requires care but avoids
+  /// uncondition make_unique
+  ///
+  /// \param labels A set of key-value pairs (= labels) of the dimensional data.
+  template <typename... Args>
   T& Get(const Labels& labels, Args&&... args) {
     std::lock_guard<std::mutex> lock{mutex_};
     auto existing(metrics_.find(labels));
